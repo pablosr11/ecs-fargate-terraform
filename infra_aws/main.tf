@@ -427,3 +427,23 @@ data "aws_iam_policy_document" "lb_logs" {
     }
   }
 }
+
+## Route 53 resources
+# Imported default zone into state
+# $ terraform import aws_route53_zone.main {zone_id}
+resource "aws_route53_zone" "main" {
+  name = var.api_zone
+}
+
+# Alias record from zone to the load balancer
+resource "aws_route53_record" "api" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "api.${var.api_zone}"
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.main.dns_name
+    zone_id                = aws_lb.main.zone_id
+    evaluate_target_health = false
+  }
+}
