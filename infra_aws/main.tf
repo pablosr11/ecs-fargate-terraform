@@ -31,6 +31,49 @@ resource "aws_ecr_repository" "main" {
   }
 }
 
+## AWS IAM Roles (base)
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "clinikita-task-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role" "ecs_task_role" {
+  name = "clinikita-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+# Task execution deals with access and managemenet of the ECS agent, the container.
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+resource "aws_iam_role_policy_attachment" "ecs_task_role_policy" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
 ## VPC, Subnets, Networking
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
@@ -85,4 +128,62 @@ resource "aws_route_table_association" "public_subnet_asso" {
 resource "aws_cloudwatch_log_group" "main" {
   name              = "clinikita-logs"
   retention_in_days = 7
+}
+
+## ECS Cluster
+resource "aws_ecs_cluster" "main" {
+  name = "clinikita-cluster"
+
+  setting {
+    name  = "containerInsights"
+    value = "disabled"
+  }
+}
+
+## ECS Task definition
+resource "aws_ecs_task_definition" "main" {
+  family                   = "clinikita-taskdef"
+  network_mode             = "awsvpc"
+  cpu                      = var.ecs_container_cpu
+  memory                   = var.ecs_container_memory
+  requires_compatibilities = ["FARGATE"]
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+
+
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "ARM64"
+  }
+
+  container_definitions = jsonencode([
+    {
+      name  = "clinikita-container",
+      image = aws_ecr_repository.main.repository_url,
+      portMappings = [
+        {
+          name          = "clinika-container-tcp"
+          containerPort = var.cliniquita_app_port
+          hostPort      = var.cliniquita_app_port
+          protocol      = "tcp"
+        }
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "clinikita-logs"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "clinikita"
+          "awslogs-create-group"  = "true"
+
+        }
+      },
+      environment = [
+        { "name" : "BASIC_AUTH_USER", "value" : var.basic_auth_user },
+        { "name" : "BASIC_AUTH_PASSWORD", "value" : var.basic_auth_password },
+        { "name" : "CLINIQUITA_APP_PORT", "value" : tostring(var.cliniquita_app_port) }
+      ],
+      essential = true,
+    },
+  ])
 }
