@@ -1,3 +1,9 @@
+/*
+Helmet secures Express apps by setting various HTTP headers to 
+mitigate well-known security vulnerabilities.
+https://helmetjs.github.io/
+ */
+const helmet = require("helmet");
 const express = require("express");
 
 if (!process.env.CLINIQUITA_APP_PORT || !process.env.BASIC_AUTH_USER) {
@@ -34,6 +40,9 @@ const basicAuth = (req, res, next) => {
   }
 };
 
+// Expressjs recommendations
+app.use(helmet());
+app.disable("x-powered-by");
 // health check endpoint
 app.get("/amihealthy", (_req, res) => res.send("yes"));
 
