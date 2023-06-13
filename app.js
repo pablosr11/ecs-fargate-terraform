@@ -1,6 +1,12 @@
 const express = require("express");
+
+if (!process.env.CLINIQUITA_APP_PORT || !process.env.BASIC_AUTH_USER) {
+  console.log("Missing required env variables");
+  process.exit(1);
+}
+
 const app = express();
-const port = 3000;
+const port = process.env.CLINIQUITA_APP_PORT;
 
 const basicAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
