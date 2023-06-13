@@ -18,3 +18,8 @@ It is deployed on top of ECS Fargate, load balanced across two containers hosted
 - As an aggregate of above (leaky security groups, ssl up to the load balancer etc), there are "leaks" in quite a few places that would need to be addressed to meet the requirements of HIPAA.
 
 
+# Further Context
+
+- First time managing VPCs and subnets directly as well as Route53 + ACM. This took a good chunk of time to figure out (specially certificate validation and DNS propagation while iterating) :)
+- This was fun. As soon as you finish with this, I will be going through the next steps detailed above.
+- I'd really appreciate if you could share some feedback!
