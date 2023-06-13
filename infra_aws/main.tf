@@ -287,6 +287,35 @@ resource "aws_lb_target_group" "http_tg" {
   }
 }
 
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.main.id
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.main.id
+  port              = 443
+  protocol          = "HTTPS"
+
+  ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn = var.alb_tls_cert_arn
+
+  default_action {
+    target_group_arn = aws_lb_target_group.http_tg.arn
+    type             = "forward"
+  }
+}
+
 # Access logs for easier debugging of ELB
 resource "aws_s3_bucket" "lb_logs" {
   bucket = "clinikita-lb-logs"

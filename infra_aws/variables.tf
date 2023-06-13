@@ -57,3 +57,8 @@ variable "ecs_container_count" {
   description = "The number of instances of the task definition to place and keep running"
   default     = 2
 }
+
+output "lb_dns_name" {
+  value       = aws_lb.main.dns_name
+  description = "Load Balancer's DNS name"
+}
