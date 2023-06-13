@@ -1,3 +1,9 @@
+variable "alb_tls_cert_arn" {
+  type        = string
+  description = "The ARN of the TLS certificate for the ALB"
+  sensitive   = true
+}
+
 variable "basic_auth_user" {
   description = "The username for basic auth"
   type        = string

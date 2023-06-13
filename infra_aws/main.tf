@@ -244,6 +244,30 @@ resource "aws_ecs_task_definition" "main" {
   ])
 }
 
+## ECS Service
+resource "aws_ecs_service" "main" {
+  name                              = "clinikita-service"
+  cluster                           = aws_ecs_cluster.main.id
+  task_definition                   = aws_ecs_task_definition.main.arn
+  desired_count                     = var.ecs_container_count
+  launch_type                       = "FARGATE"
+  scheduling_strategy               = "REPLICA"
+  health_check_grace_period_seconds = 60
+
+  network_configuration {
+    subnets          = aws_subnet.public_subnets[*].id
+    security_groups  = [aws_security_group.app.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.http_tg.arn
+    container_name   = "clinikita-container"
+    container_port   = var.cliniquita_app_port
+  }
+
+}
+
 resource "aws_s3_bucket_policy" "lb_logs" {
   bucket = aws_s3_bucket.lb_logs.id
   policy = data.aws_iam_policy_document.lb_logs.json
