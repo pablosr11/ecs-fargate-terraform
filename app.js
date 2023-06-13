@@ -34,6 +34,9 @@ const basicAuth = (req, res, next) => {
   }
 };
 
+// health check endpoint
+app.get("/amihealthy", (_req, res) => res.send("yes"));
+
 app.get("/", basicAuth, (_req, res) =>
   res.send("Welcome! This is a secret password protected page.")
 );
