@@ -43,11 +43,22 @@ const basicAuth = (req, res, next) => {
 // Expressjs recommendations
 app.use(helmet());
 app.disable("x-powered-by");
+
 // health check endpoint
 app.get("/amihealthy", (_req, res) => res.send("yes"));
 
 app.get("/", basicAuth, (_req, res) =>
   res.send("Welcome! This is a secret password protected page.")
 );
+
+// Catch all 404 and error handler
+app.use((_req, res, _next) =>
+  res.status(404).send("Not found. We don't have this at the Cliniquita")
+);
+
+app.use((err, _req, res, _next) => {
+  console.error(err.stack);
+  res.status(500).send("Something's broken at the Cliniquita. We're on it!");
+});
 
 app.listen(port, () => console.log(`Server ready on port ${port}`));
