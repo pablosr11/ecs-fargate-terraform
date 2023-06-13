@@ -18,3 +18,16 @@ terraform {
 provider "aws" {
   region = var.aws_region
 }
+
+## ECR
+resource "aws_ecr_repository" "main" {
+  name = "clinikita"
+  image_scanning_configuration {
+    scan_on_push = false
+  }
+
+  tags = {
+    Name = "clinikita-repo"
+  }
+}
+
