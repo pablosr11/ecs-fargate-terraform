@@ -34,6 +34,12 @@ variable "aws_region" {
   default     = "eu-west-2"
 }
 
+variable "ELB_account_id" {
+  type        = string
+  description = "ELB Account ID for the AWS region where the ELB is created"
+  default     = "652711504416"
+}
+
 variable "ecs_container_cpu" {
   type        = number
   description = "The number of cpu units to reserve for the container"

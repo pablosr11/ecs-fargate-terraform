@@ -65,15 +65,71 @@ resource "aws_iam_role" "ecs_task_role" {
     ]
   })
 }
+
+# AWS default role policies for both
 # Task execution deals with access and managemenet of the ECS agent, the container.
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
+
+# Task role deals with acess and management of the task itself, the app
 resource "aws_iam_role_policy_attachment" "ecs_task_role_policy" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
+
+## Security Groups
+resource "aws_security_group" "app" {
+  name        = "clinikita-app-sg"
+  description = "Allow all inbound traffic"
+  vpc_id      = aws_vpc.main.id
+
+  # Ports should be restricted to access from ELB and whats required for ECS (ECR, Cloudwatch, etc)
+  ingress {
+    protocol    = "tcp"
+    from_port   = 0
+    to_port     = 65535
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+  egress {
+    protocol    = "tcp"
+    from_port   = 0
+    to_port     = 65535
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "lb" {
+  name        = "clinikita-lb-sg"
+  description = "LB security groups. Allow 443 and 80"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 443
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 80
+    to_port     = 80
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    protocol    = "tcp"
+    from_port   = 0
+    to_port     = 65535
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+}
+
 ## VPC, Subnets, Networking
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
@@ -186,4 +242,69 @@ resource "aws_ecs_task_definition" "main" {
       essential = true,
     },
   ])
+}
+
+resource "aws_s3_bucket_policy" "lb_logs" {
+  bucket = aws_s3_bucket.lb_logs.id
+  policy = data.aws_iam_policy_document.lb_logs.json
+}
+
+## Load Balancer
+resource "aws_lb" "main" {
+  name                       = "clinikita-lb"
+  internal                   = false
+  load_balancer_type         = "application"
+  security_groups            = [aws_security_group.lb.id]
+  subnets                    = aws_subnet.public_subnets[*].id
+  enable_deletion_protection = false
+
+  access_logs {
+    bucket  = aws_s3_bucket.lb_logs.bucket
+    prefix  = "clinikita-lb-logs"
+    enabled = true
+  }
+
+  tags = {
+    Name = "clinikita-lb"
+  }
+}
+
+resource "aws_lb_target_group" "http_tg" {
+  name = "clinikita-tg-http"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    path                = "/amihealthy"
+    interval            = 20
+    protocol            = "HTTP"
+    timeout             = 5
+    matcher             = "200"
+    unhealthy_threshold = 3
+    healthy_threshold   = 5
+  }
+}
+
+# Access logs for easier debugging of ELB
+resource "aws_s3_bucket" "lb_logs" {
+  bucket = "clinikita-lb-logs"
+
+  tags = {
+    Name = "clinikita-lb-logs"
+  }
+}
+
+data "aws_iam_policy_document" "lb_logs" {
+  statement {
+    actions = ["s3:PutObject"]
+    resources = [
+      "${aws_s3_bucket.lb_logs.arn}/*",
+    ]
+    principals {
+      identifiers = [var.ELB_account_id]
+      type        = "AWS"
+    }
+  }
 }
