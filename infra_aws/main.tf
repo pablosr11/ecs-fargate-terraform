@@ -232,69 +232,6 @@ resource "aws_nat_gateway" "ngw" {
 
 }
 
-# Endpoints so ECS container can access required AWS services
-resource "aws_vpc_endpoint" "ecr-dkr-endpoint" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${var.aws_region}.ecr.dkr"
-  vpc_endpoint_type   = "Interface"
-  security_group_ids  = [aws_security_group.app.id]
-  subnet_ids          = aws_subnet.public_subnets[*].id
-  private_dns_enabled = true
-}
-
-resource "aws_vpc_endpoint" "ecr-api-endpoint" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
-  vpc_endpoint_type   = "Interface"
-  security_group_ids  = [aws_security_group.app.id]
-  subnet_ids          = aws_subnet.public_subnets[*].id
-  private_dns_enabled = true
-}
-
-resource "aws_vpc_endpoint" "ecs-agent" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${var.aws_region}.ecs-agent"
-  vpc_endpoint_type   = "Interface"
-  security_group_ids  = [aws_security_group.app.id]
-  subnet_ids          = aws_subnet.public_subnets[*].id
-  private_dns_enabled = true
-}
-
-resource "aws_vpc_endpoint" "cloudwatch" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${var.aws_region}.logs"
-  vpc_endpoint_type   = "Interface"
-  security_group_ids  = [aws_security_group.app.id]
-  subnet_ids          = aws_subnet.public_subnets[*].id
-  private_dns_enabled = true
-}
-
-resource "aws_vpc_endpoint" "ecs-telemetry" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${var.aws_region}.ecs-telemetry"
-  vpc_endpoint_type   = "Interface"
-  security_group_ids  = [aws_security_group.app.id]
-  subnet_ids          = aws_subnet.public_subnets[*].id
-  private_dns_enabled = true
-}
-
-resource "aws_vpc_endpoint" "s3" {
-  vpc_id            = aws_vpc.main.id
-  service_name      = "com.amazonaws.${var.aws_region}.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = [aws_route_table.second_rt.id]
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action    = ["s3:*"]
-        Effect    = "Allow"
-        Resource  = ["*"]
-        Principal = "*"
-      }
-    ]
-  })
-}
 
 resource "aws_cloudwatch_log_group" "main" {
   name              = "clinikita-logs"
