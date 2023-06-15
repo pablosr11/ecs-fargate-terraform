@@ -348,6 +348,23 @@ resource "aws_lb" "main" {
 
 resource "aws_lb_target_group" "http_tg" {
   name = "clinikita-tg-http"
+
+  port        = 3000
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
+  target_type = "ip"
+
+  health_check {
+    path                = "/amihealthy"
+    interval            = 20
+    protocol            = "HTTP"
+    timeout             = 5
+    matcher             = "200"
+    unhealthy_threshold = 3
+    healthy_threshold   = 5
+  }
+}
+
   # This should be HTTPS 443 and the certificate
   # should be handled at the app level to be end to end encrypted.
   port        = 80
