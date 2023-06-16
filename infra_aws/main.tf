@@ -293,6 +293,31 @@ resource "aws_ecs_task_definition" "main" {
       ],
       essential = true,
     },
+    # setup and nginx container listening on 80
+    {
+      name  = "nginx-container",
+      image = "nginx:latest",
+      portMappings = [
+        {
+          name          = "nginx-container-tcp"
+          containerPort = 80
+          hostPort      = 80
+          protocol      = "tcp"
+        }
+      ],
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "clinikita-logs"
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "clinikita-nginx"
+          "awslogs-create-group"  = "true"
+
+        }
+      },
+      essential = true,
+      links     = ["clinikita-container"]
+    }
   ])
 }
 
