@@ -316,7 +316,6 @@ resource "aws_ecs_task_definition" "main" {
         }
       },
       essential = true,
-      links     = ["clinikita-container"]
     }
   ])
 }
