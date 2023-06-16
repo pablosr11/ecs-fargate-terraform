@@ -373,12 +373,13 @@ resource "aws_lb" "main" {
 resource "aws_lb_target_group" "http_tg" {
   name = "clinikita-tg-http"
 
-  port        = 3000
+  port        = var.cliniquita_app_port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
 
   health_check {
+    enabled             = true # must be enable for target groups type "ip"
     path                = "/amihealthy"
     interval            = 20
     protocol            = "HTTP"
