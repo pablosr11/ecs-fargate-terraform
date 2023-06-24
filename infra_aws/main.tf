@@ -341,6 +341,9 @@ resource "aws_ecs_service" "main" {
     target_group_arn = aws_lb_target_group.http_tg.arn
     container_name   = "clinikita-container"
     container_port   = var.cliniquita_app_port
+    # container_name   = "nginx-container"
+    # container_port   = 80
+    ## todo: build config for nginx to verify ssl cert and proxy_pass to the other container
   }
 
 }
@@ -381,6 +384,7 @@ resource "aws_lb_target_group" "http_tg" {
   health_check {
     enabled             = true # must be enable for target groups type "ip"
     path                = "/amihealthy"
+    # path                = "/"
     interval            = 20
     protocol            = "HTTP"
     timeout             = 5
